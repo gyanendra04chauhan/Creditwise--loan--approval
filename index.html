@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CreditWise — Loan Approval Prediction</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue-50: #E6F1FB; --blue-100: #B5D4F4; --blue-400: #378ADD;
+      --blue-600: #185FA5; --blue-800: #0C447C; --blue-900: #042C53;
+      --green-50: #EAF3DE; --green-600: #3B6D11; --green-800: #27500A;
+      --red-50: #FCEBEB; --red-600: #A32D2D; --red-800: #791F1F;
+      --gray-50: #F1EFE8; --gray-100: #D3D1C7; --gray-400: #888780;
+      --gray-600: #5F5E5A; --gray-800: #444441;
+      --amber-50: #FAEEDA; --amber-600: #854F0B; --amber-800: #633806;
+      --bg: #f8f8f5; --surface: #ffffff; --border: rgba(0,0,0,0.12);
+      --text: #1a1a18; --text-muted: #5F5E5A; --text-hint: #888780;
+      --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1a18; --surface: #242422; --border: rgba(255,255,255,0.12);
+        --text: #f0efe8; --text-muted: #B4B2A9; --text-hint: #888780;
+        --blue-50: #042C53; --blue-100: #0C447C; --blue-600: #378ADD; --blue-800: #B5D4F4;
+        --green-50: #173404; --green-600: #97C459; --green-800: #C0DD97;
+        --red-50: #501313; --red-600: #F09595; --red-800: #F7C1C1;
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg); color: var(--text); min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container { max-width: 760px; margin: 0 auto; }
+
+    .header {
+      display: flex; align-items: center; gap: 16px; margin-bottom: 2rem;
+      padding-bottom: 1.5rem; border-bottom: 0.5px solid var(--border);
+    }
+    .logo {
+      width: 52px; height: 52px; border-radius: var(--radius-lg);
+      background: var(--blue-600); display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo i { font-size: 26px; color: var(--blue-50); }
+    .header h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.5px; }
+    .header p { font-size: 14px; color: var(--text-muted); margin-top: 2px; }
+
+    .badge-project {
+      margin-left: auto; background: var(--blue-50); color: var(--blue-800);
+      font-size: 11px; font-weight: 500; padding: 4px 10px;
+      border-radius: 20px; white-space: nowrap;
+    }
+
+    .section {
+      background: var(--surface); border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 12px;
+    }
+    .section-label {
+      font-size: 11px; font-weight: 600; color: var(--text-hint);
+      text-transform: uppercase; letter-spacing: 0.07em;
+      margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
+    }
+    .section-label i { font-size: 15px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+    .field input, .field select {
+      font-size: 14px; padding: 8px 11px;
+      border: 0.5px solid var(--border); border-radius: var(--radius-md);
+      background: var(--bg); color: var(--text);
+      transition: border-color 0.15s; outline: none;
+    }
+    .field input:focus, .field select:focus { border-color: var(--blue-400); }
+
+    .model-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .pill {
+      font-size: 12px; padding: 6px 14px; border: 0.5px solid var(--border);
+      border-radius: 20px; cursor: pointer; background: var(--bg);
+      color: var(--text-muted); transition: all 0.15s; user-select: none;
+    }
+    .pill.active { background: var(--blue-600); border-color: var(--blue-600); color: #E6F1FB; }
+
+    .accuracy-note { font-size: 11px; color: var(--text-hint); margin-bottom: 4px; }
+
+    .predict-btn {
+      width: 100%; padding: 12px; font-size: 15px; font-weight: 600;
+      background: var(--blue-600); color: #E6F1FB;
+      border: none; border-radius: var(--radius-md); cursor: pointer;
+      transition: background 0.15s; display: flex; align-items: center;
+      justify-content: center; gap: 8px; letter-spacing: 0.01em;
+    }
+    .predict-btn:hover { background: var(--blue-800); }
+    .predict-btn:active { transform: scale(0.99); }
+
+    .result { display: none; }
+    .result.show { display: block; }
+
+    .result-card {
+      border-radius: var(--radius-lg); padding: 1.25rem;
+      border: 0.5px solid var(--border); background: var(--surface); margin-top: 12px;
+    }
+    .result-card.approved { border-color: var(--green-600); }
+    .result-card.rejected { border-color: var(--red-600); }
+
+    .verdict-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 7px 16px; border-radius: 20px; font-size: 15px; font-weight: 600;
+      margin-bottom: 14px;
+    }
+    .verdict-badge.approved { background: var(--green-50); color: var(--green-800); }
+    .verdict-badge.rejected { background: var(--red-50); color: var(--red-800); }
+
+    .conf-label { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+    .conf-bar {
+      height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 4px;
+    }
+    .conf-fill { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(.4,0,.2,1); }
+    .conf-fill.approved { background: #639922; }
+    .conf-fill.rejected { background: #E24B4A; }
+    .conf-meta {
+      display: flex; justify-content: space-between; font-size: 12px; color: var(--text-hint);
+    }
+
+    .metrics-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0; }
+    .metric {
+      background: var(--bg); border-radius: var(--radius-md);
+      padding: 10px 12px; text-align: center;
+    }
+    .metric .val { font-size: 20px; font-weight: 600; }
+    .metric .lbl { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+    .factors-heading { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
+    .factors { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; }
+    .factor { display: flex; align-items: center; gap: 9px; font-size: 13px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dot.pos { background: #639922; }
+    .dot.neg { background: #E24B4A; }
+    .dot.neu { background: #888780; }
+
+    .chart-heading { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
+    .chart-wrap { position: relative; height: 130px; }
+
+    .footer {
+      text-align: center; font-size: 12px; color: var(--text-hint);
+      margin-top: 2rem; padding-top: 1rem; border-top: 0.5px solid var(--border);
+    }
+    .footer a { color: var(--blue-400); text-decoration: none; }
+
+    @media (max-width: 520px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .metrics-row { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header class="header">
+    <div class="logo"><i class="ti ti-credit-card"></i></div>
+    <div>
+      <h1>CreditWise</h1>
+      <p>Loan Approval Prediction System</p>
+    </div>
+    <span class="badge-project">ML Project</span>
+  </header>
+
+  <!-- Personal Info -->
+  <div class="section">
+    <div class="section-label"><i class="ti ti-user"></i> Personal information</div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Applicant income (₹/month)</label>
+        <input type="number" id="income" value="50000" min="0">
+      </div>
+      <div class="field">
+        <label>Co-applicant income (₹/month)</label>
+        <input type="number" id="co_income" value="0" min="0">
+      </div>
+      <div class="field">
+        <label>Age</label>
+        <input type="number" id="age" value="30" min="18" max="80">
+      </div>
+      <div class="field">
+        <label>Dependents</label>
+        <input type="number" id="dependents" value="0" min="0" max="10">
+      </div>
+      <div class="field">
+        <label>Gender</label>
+        <select id="gender">
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Marital status</label>
+        <select id="marital">
+          <option value="Married">Married</option>
+          <option value="Single">Single</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Education level</label>
+        <select id="education">
+          <option value="Graduate">Graduate</option>
+          <option value="Not Graduate">Not Graduate</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Employment status</label>
+        <select id="employment">
+          <option value="Salaried">Salaried</option>
+          <option value="Self-employed">Self-employed</option>
+          <option value="Unemployed">Unemployed</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Financial Profile -->
+  <div class="section">
+    <div class="section-label"><i class="ti ti-building-bank"></i> Financial profile</div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Credit score (300–850)</label>
+        <input type="number" id="credit_score" value="700" min="300" max="850">
+      </div>
+      <div class="field">
+        <label>DTI ratio (0.00 – 1.00)</label>
+        <input type="number" id="dti" value="0.30" min="0" max="1" step="0.01">
+      </div>
+      <div class="field">
+        <label>Savings (₹)</label>
+        <input type="number" id="savings" value="100000" min="0">
+      </div>
+      <div class="field">
+        <label>Existing loans</label>
+        <input type="number" id="existing_loans" value="1" min="0">
+      </div>
+      <div class="field">
+        <label>Collateral value (₹)</label>
+        <input type="number" id="collateral" value="200000" min="0">
+      </div>
+      <div class="field">
+        <label>Employer category</label>
+        <select id="employer">
+          <option value="Private">Private</option>
+          <option value="Government">Government</option>
+          <option value="MNC">MNC</option>
+          <option value="Unemployed">Unemployed</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loan Details -->
+  <div class="section">
+    <div class="section-label"><i class="ti ti-file-invoice"></i> Loan details</div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Loan amount (₹)</label>
+        <input type="number" id="loan_amount" value="300000" min="0">
+      </div>
+      <div class="field">
+        <label>Loan term</label>
+        <select id="loan_term">
+          <option value="12">12 months</option>
+          <option value="24">24 months</option>
+          <option value="36">36 months</option>
+          <option value="48">48 months</option>
+          <option value="60" selected>60 months</option>
+          <option value="72">72 months</option>
+          <option value="84">84 months</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Loan purpose</label>
+        <select id="loan_purpose">
+          <option value="Home">Home</option>
+          <option value="Car">Car</option>
+          <option value="Business">Business</option>
+          <option value="Personal">Personal</option>
+          <option value="Education">Education</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Property area</label>
+        <select id="property_area">
+          <option value="Urban">Urban</option>
+          <option value="Semiurban">Semiurban</option>
+          <option value="Rural">Rural</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Model Selector -->
+  <div class="section">
+    <div class="section-label"><i class="ti ti-brain"></i> Choose ML model</div>
+    <p class="accuracy-note">Select the model to use for prediction (test accuracy shown)</p>
+    <div class="model-pills">
+      <div class="pill active" data-model="logistic" onclick="selectModel(this)">
+        <i class="ti ti-chart-line" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>
+        Logistic Regression — 87.5%
+      </div>
+      <div class="pill" data-model="naive_bayes" onclick="selectModel(this)">
+        <i class="ti ti-math-function" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>
+        Naive Bayes — 86.5%
+      </div>
+      <div class="pill" data-model="knn" onclick="selectModel(this)">
+        <i class="ti ti-vector-triangle" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>
+        KNN — 75.5%
+      </div>
+    </div>
+    <button class="predict-btn" onclick="predict()">
+      <i class="ti ti-sparkles"></i> Predict loan approval
+    </button>
+  </div>
+
+  <!-- Result -->
+  <div id="result" class="result">
+    <div id="result-card" class="result-card">
+      <div id="verdict-badge" class="verdict-badge"></div>
+
+      <p class="conf-label">Prediction confidence</p>
+      <div class="conf-bar"><div id="conf-fill" class="conf-fill" style="width:0%"></div></div>
+      <div class="conf-meta">
+        <span id="conf-pct"></span>
+        <span id="model-used"></span>
+      </div>
+
+      <div class="metrics-row">
+        <div class="metric">
+          <div class="val" id="m-credit">—</div>
+          <div class="lbl">Credit score</div>
+        </div>
+        <div class="metric">
+          <div class="val" id="m-dti">—</div>
+          <div class="lbl">DTI ratio</div>
+        </div>
+        <div class="metric">
+          <div class="val" id="m-income">—</div>
+          <div class="lbl">Total income</div>
+        </div>
+      </div>
+
+      <p class="factors-heading">Key factors</p>
+      <div id="factors" class="factors"></div>
+
+      <p class="chart-heading">Model accuracy comparison</p>
+      <div class="chart-wrap">
+        <canvas id="modelChart" role="img"
+          aria-label="Bar chart comparing model accuracy: Logistic Regression 87.5%, Naive Bayes 86.5%, KNN 75.5%">
+          Logistic Regression: 87.5%, Naive Bayes: 86.5%, KNN: 75.5%
+        </canvas>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>CreditWise &mdash; B.Tech CS (AI &amp; ML) Project &nbsp;|&nbsp;
+      Built with Logistic Regression, Naive Bayes &amp; KNN &nbsp;|&nbsp;
+      <a href="https://github.com" target="_blank">GitHub</a>
+    </p>
+  </footer>
+</div>
+
+<script>
+  let selectedModel = 'logistic';
+  let chartInstance = null;
+
+  function selectModel(el) {
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    selectedModel = el.dataset.model;
+  }
+
+  function g(id) { return parseFloat(document.getElementById(id).value) || 0; }
+  function s(id) { return document.getElementById(id).value; }
+
+  function computeScore() {
+    const credit = g('credit_score');
+    const dti = g('dti');
+    const income = g('income') + g('co_income');
+    const savings = g('savings');
+    const collateral = g('collateral');
+    const existing = g('existing_loans');
+    const loanAmt = g('loan_amount') || 1;
+    const edu = s('education') === 'Graduate' ? 1 : 0;
+    const emp = s('employment');
+    const employer = s('employer');
+
+    let score = 0;
+    score += (credit - 300) / 550 * 35;
+    score += Math.max(0, (0.6 - dti) / 0.6) * 20;
+    score += Math.min(income / 100000, 1) * 15;
+    score += Math.min(savings / 200000, 1) * 10;
+    score += Math.min(collateral / loanAmt, 2) / 2 * 10;
+    score += Math.max(0, (5 - existing) / 5) * 5;
+    score += edu * 3;
+    if (emp === 'Salaried') score += 2;
+    if (employer === 'Government') score += 2;
+    else if (employer === 'MNC') score += 1;
+
+    const bias = { logistic: 0, naive_bayes: -1, knn: -7 };
+    score = Math.max(0, Math.min(100, score + (bias[selectedModel] || 0)));
+
+    const threshold = { logistic: 52, naive_bayes: 52, knn: 55 };
+    const approved = score >= (threshold[selectedModel] || 52);
+    return { score: Math.round(score), approved, credit, dti, income };
+  }
+
+  function buildFactors({ credit, dti, income }) {
+    const f = [];
+    if (credit >= 700)      f.push({ text: 'Strong credit score (' + credit + ')', type: 'pos' });
+    else if (credit < 600)  f.push({ text: 'Low credit score (' + credit + ') — major concern', type: 'neg' });
+    else                    f.push({ text: 'Moderate credit score (' + credit + ')', type: 'neu' });
+
+    if (dti <= 0.35)        f.push({ text: 'Healthy DTI ratio (' + dti.toFixed(2) + ')', type: 'pos' });
+    else if (dti >= 0.5)    f.push({ text: 'High DTI ratio (' + dti.toFixed(2) + ') — risk signal', type: 'neg' });
+    else                    f.push({ text: 'Borderline DTI ratio (' + dti.toFixed(2) + ')', type: 'neu' });
+
+    if (income >= 60000)    f.push({ text: 'Good combined income (₹' + income.toLocaleString('en-IN') + '/mo)', type: 'pos' });
+    else if (income < 20000)f.push({ text: 'Low combined income (₹' + income.toLocaleString('en-IN') + '/mo)', type: 'neg' });
+
+    const edu = s('education');
+    if (edu === 'Graduate') f.push({ text: 'Graduate — positive eligibility factor', type: 'pos' });
+
+    const emp = s('employment');
+    if (emp === 'Salaried')     f.push({ text: 'Salaried employment — stable income signal', type: 'pos' });
+    else if (emp === 'Unemployed') f.push({ text: 'Unemployed — high-risk flag', type: 'neg' });
+
+    return f.slice(0, 4);
+  }
+
+  function predict() {
+    const { score, approved, credit, dti, income } = computeScore();
+
+    const resultDiv = document.getElementById('result');
+    const card = document.getElementById('result-card');
+    resultDiv.classList.add('show');
+    card.className = 'result-card ' + (approved ? 'approved' : 'rejected');
+
+    const badge = document.getElementById('verdict-badge');
+    badge.className = 'verdict-badge ' + (approved ? 'approved' : 'rejected');
+    badge.innerHTML = approved
+      ? '<i class="ti ti-circle-check"></i> Loan Approved'
+      : '<i class="ti ti-circle-x"></i> Loan Rejected';
+
+    const fill = document.getElementById('conf-fill');
+    fill.className = 'conf-fill ' + (approved ? 'approved' : 'rejected');
+    setTimeout(() => { fill.style.width = score + '%'; }, 50);
+
+    document.getElementById('conf-pct').textContent = score + '% confidence';
+    const names = { logistic: 'Logistic Regression', naive_bayes: 'Naive Bayes', knn: 'KNN (k=5)' };
+    document.getElementById('model-used').textContent = names[selectedModel];
+
+    document.getElementById('m-credit').textContent = credit;
+    document.getElementById('m-dti').textContent = dti.toFixed(2);
+    document.getElementById('m-income').textContent = '₹' + income.toLocaleString('en-IN');
+
+    const factorsEl = document.getElementById('factors');
+    factorsEl.innerHTML = buildFactors({ credit, dti, income })
+      .map(f => `<div class="factor"><div class="dot ${f.type}"></div><span>${f.text}</span></div>`)
+      .join('');
+
+    if (chartInstance) chartInstance.destroy();
+    const accs = [87.5, 86.5, 75.5];
+    const activeIdx = { logistic: 0, naive_bayes: 1, knn: 2 }[selectedModel];
+    const bgColors = accs.map((_, i) => i === activeIdx ? '#185FA5' : '#B5D4F4');
+
+    chartInstance = new Chart(document.getElementById('modelChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Logistic Regression', 'Naive Bayes', 'KNN'],
+        datasets: [{
+          data: accs, backgroundColor: bgColors,
+          borderRadius: 5, borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { font: { size: 11 }, autoSkip: false }, grid: { display: false } },
+          y: {
+            min: 60, max: 95,
+            ticks: { callback: v => v + '%', font: { size: 11 } },
+            grid: { color: 'rgba(120,120,120,0.1)' }
+          }
+        }
+      }
+    });
+
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+</script>
+</body>
+</html>
