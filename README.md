@@ -7,7 +7,7 @@
 ![Scikit-learn](https://img.shields.io/badge/Scikit--learn-ML-orange?logo=scikit-learn)
 ![HTML](https://img.shields.io/badge/Frontend-HTML%2FJS-green?logo=html5)
 ![Status](https://img.shields.io/badge/Status-Complete-brightgreen)
-![Live Demo](https://creditwise--loan--approval-bzyw22crygmzoxnk85hhx7.streamlit.app/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-%F0%9F%9A%80%20Streamlit-red)](https://creditwise--loan--approval-bzyw22crygmzoxnk85hhx7.streamlit.app)
 
 ---
 
