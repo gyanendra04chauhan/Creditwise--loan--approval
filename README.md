@@ -1,11 +1,13 @@
 # 💳 CreditWise — Loan Approval Prediction System
 
+
 > A Machine Learning project that predicts loan approval using multiple classification algorithms, with a clean interactive frontend.
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)
 ![Scikit-learn](https://img.shields.io/badge/Scikit--learn-ML-orange?logo=scikit-learn)
 ![HTML](https://img.shields.io/badge/Frontend-HTML%2FJS-green?logo=html5)
 ![Status](https://img.shields.io/badge/Status-Complete-brightgreen)
+![Live Demo](https://creditwise--loan--approval-bzyw22crygmzoxnk85hhx7.streamlit.app/)
 
 ---
 
